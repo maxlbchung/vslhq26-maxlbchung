@@ -1,0 +1,225 @@
+{
+  "org_name": "Northwind Traders",
+  "domain": "northwind-traders.example",
+  "short_code": "NWT",
+  "synthetic": true,
+  "notes": "Entirely fabricated organisation. Every name, role, and exposure attribute is invented for simulation. Mailboxes use the RFC 2606 reserved .example TLD and can never resolve. No real person or company is represented.",
+  "employees": [
+    {
+      "id": "emp-001",
+      "name": "Priya Raman",
+      "role": "Accounts Payable Specialist",
+      "department": "Finance",
+      "email": "priya.raman@northwind-traders.example",
+      "exposure": ["handles_vendor_invoices", "listed_on_public_contact_page"],
+      "voice": "warm and accommodating; apologises reflexively and wants to unblock people",
+      "traits": {
+        "authority_deference": 0.62,
+        "urgency_susceptibility": 0.58,
+        "curiosity": 0.35,
+        "helpfulness": 0.78,
+        "technical_literacy": 0.30,
+        "verification_habit": 0.28,
+        "training_recency": 0.35
+      }
+    },
+    {
+      "id": "emp-002",
+      "name": "Marcus Feld",
+      "role": "VP Finance",
+      "department": "Finance",
+      "email": "marcus.feld@northwind-traders.example",
+      "exposure": ["finance_approval_authority", "listed_on_public_contact_page", "frequent_traveler"],
+      "voice": "clipped and decisive; visibly dislikes being slowed down",
+      "traits": {
+        "authority_deference": 0.30,
+        "urgency_susceptibility": 0.55,
+        "curiosity": 0.25,
+        "helpfulness": 0.40,
+        "technical_literacy": 0.45,
+        "verification_habit": 0.58,
+        "training_recency": 0.60
+      }
+    },
+    {
+      "id": "emp-003",
+      "name": "Sofia Almeida",
+      "role": "HR Coordinator",
+      "department": "People",
+      "email": "sofia.almeida@northwind-traders.example",
+      "exposure": ["handles_payroll", "listed_on_public_contact_page"],
+      "voice": "polite and procedural; defers upward when unsure",
+      "traits": {
+        "authority_deference": 0.70,
+        "urgency_susceptibility": 0.62,
+        "curiosity": 0.50,
+        "helpfulness": 0.72,
+        "technical_literacy": 0.32,
+        "verification_habit": 0.34,
+        "training_recency": 0.45
+      }
+    },
+    {
+      "id": "emp-004",
+      "name": "Tomas Berg",
+      "role": "Sales Engineer",
+      "department": "Sales",
+      "email": "tomas.berg@northwind-traders.example",
+      "exposure": ["new_hire", "recent_device_change", "collaborates_externally"],
+      "voice": "eager to look competent in a new job; agrees quickly and asks questions later",
+      "traits": {
+        "authority_deference": 0.68,
+        "urgency_susceptibility": 0.74,
+        "curiosity": 0.55,
+        "helpfulness": 0.60,
+        "technical_literacy": 0.52,
+        "verification_habit": 0.22,
+        "training_recency": 0.18
+      }
+    },
+    {
+      "id": "emp-005",
+      "name": "Rachel Nkemdirim",
+      "role": "Senior Site Reliability Engineer",
+      "department": "Engineering",
+      "email": "rachel.nkemdirim@northwind-traders.example",
+      "exposure": ["admin_privileges"],
+      "voice": "terse and sceptical; asks for a ticket number before anything else",
+      "traits": {
+        "authority_deference": 0.18,
+        "urgency_susceptibility": 0.25,
+        "curiosity": 0.40,
+        "helpfulness": 0.35,
+        "technical_literacy": 0.95,
+        "verification_habit": 0.88,
+        "training_recency": 0.90
+      }
+    },
+    {
+      "id": "emp-006",
+      "name": "Jonas Petrov",
+      "role": "Facilities Coordinator",
+      "department": "Operations",
+      "email": "jonas.petrov@northwind-traders.example",
+      "exposure": ["badge_access_main_office"],
+      "voice": "friendly and physically helpful; strongly avoids confrontation",
+      "traits": {
+        "authority_deference": 0.58,
+        "urgency_susceptibility": 0.45,
+        "curiosity": 0.30,
+        "helpfulness": 0.90,
+        "technical_literacy": 0.22,
+        "verification_habit": 0.30,
+        "training_recency": 0.28
+      }
+    },
+    {
+      "id": "emp-007",
+      "name": "Amara Sylla",
+      "role": "Marketing Manager",
+      "department": "Marketing",
+      "email": "amara.sylla@northwind-traders.example",
+      "exposure": ["speaks_at_conferences", "listed_on_public_contact_page", "collaborates_externally"],
+      "voice": "enthusiastic; clicks through to see a thing rather than asking about it",
+      "traits": {
+        "authority_deference": 0.40,
+        "urgency_susceptibility": 0.48,
+        "curiosity": 0.82,
+        "helpfulness": 0.60,
+        "technical_literacy": 0.48,
+        "verification_habit": 0.42,
+        "training_recency": 0.55
+      }
+    },
+    {
+      "id": "emp-008",
+      "name": "Liam Whitfield",
+      "role": "Executive Assistant to the CEO",
+      "department": "Executive",
+      "email": "liam.whitfield@northwind-traders.example",
+      "exposure": ["reports_to_executive", "finance_approval_authority"],
+      "voice": "deferential and fast-moving; fiercely protective of the principal's time",
+      "traits": {
+        "authority_deference": 0.88,
+        "urgency_susceptibility": 0.80,
+        "curiosity": 0.40,
+        "helpfulness": 0.75,
+        "technical_literacy": 0.38,
+        "verification_habit": 0.40,
+        "training_recency": 0.50
+      }
+    },
+    {
+      "id": "emp-009",
+      "name": "Yuki Tanaka",
+      "role": "Procurement Analyst",
+      "department": "Finance",
+      "email": "yuki.tanaka@northwind-traders.example",
+      "exposure": ["handles_vendor_invoices", "collaborates_externally"],
+      "voice": "methodical; quotes the relevant policy section back at you",
+      "traits": {
+        "authority_deference": 0.42,
+        "urgency_susceptibility": 0.40,
+        "curiosity": 0.45,
+        "helpfulness": 0.55,
+        "technical_literacy": 0.55,
+        "verification_habit": 0.70,
+        "training_recency": 0.72
+      }
+    },
+    {
+      "id": "emp-010",
+      "name": "Grace Adeyemi",
+      "role": "Customer Support Representative",
+      "department": "Support",
+      "email": "grace.adeyemi@northwind-traders.example",
+      "exposure": ["listed_on_public_contact_page"],
+      "voice": "unfailingly helpful; treats every inbound message as a customer to satisfy",
+      "traits": {
+        "authority_deference": 0.60,
+        "urgency_susceptibility": 0.55,
+        "curiosity": 0.60,
+        "helpfulness": 0.88,
+        "technical_literacy": 0.35,
+        "verification_habit": 0.25,
+        "training_recency": 0.20
+      }
+    },
+    {
+      "id": "emp-011",
+      "name": "Viktor Nowak",
+      "role": "Regional Sales Director",
+      "department": "Sales",
+      "email": "viktor.nowak@northwind-traders.example",
+      "exposure": ["frequent_traveler", "speaks_at_conferences"],
+      "voice": "always in transit; skims everything on a phone between flights",
+      "traits": {
+        "authority_deference": 0.35,
+        "urgency_susceptibility": 0.68,
+        "curiosity": 0.58,
+        "helpfulness": 0.45,
+        "technical_literacy": 0.30,
+        "verification_habit": 0.32,
+        "training_recency": 0.15
+      }
+    },
+    {
+      "id": "emp-012",
+      "name": "Hannah Cole",
+      "role": "Corporate Counsel",
+      "department": "Legal",
+      "email": "hannah.cole@northwind-traders.example",
+      "exposure": ["collaborates_externally", "listed_on_public_contact_page"],
+      "voice": "precise; puts everything in writing and verifies before acting",
+      "traits": {
+        "authority_deference": 0.28,
+        "urgency_susceptibility": 0.30,
+        "curiosity": 0.38,
+        "helpfulness": 0.40,
+        "technical_literacy": 0.50,
+        "verification_habit": 0.85,
+        "training_recency": 0.80
+      }
+    }
+  ]
+}

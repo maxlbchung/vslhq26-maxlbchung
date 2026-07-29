@@ -1,0 +1,19 @@
+# Build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+.vs/
+
+# Engagement output. Logs and reports are generated artefacts; regenerate with
+# `swarmrt run`, or rebuild the reports from a log with `swarmrt report`.
+# The committed example lives at social-engineering-report-example.md.
+out/
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
+coverage*.xml
+coverage*.json
