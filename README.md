@@ -8,7 +8,9 @@ Orchestrator then dispatches new agents with different approaches to better find
 
 Every attempt is logged, and the log becomes a training deliverable: which pretexts worked,
 against whom, and why. This can help companies better train their employees, and in the recent meta agent fiasco, better guardrail their models.
-https://www.404media.co/hackers-simply-asked-meta-ai-to-give-them-access-to-high-profile-instagram-accounts-it-worked/
+
+[Hackers Simply Asked Meta AI to Give Them Access to High-Profile Instagram Accounts. It Worked]([https://google.com](https://www.404media.co/hackers-simply-asked-meta-ai-to-give-them-access-to-high-profile-instagram-accounts-it-worked/))
+
  
 This project is a simulation with a **fabricated** employee at a **made up** company.
 
