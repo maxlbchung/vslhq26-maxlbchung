@@ -220,6 +220,24 @@
         "verification_habit": 0.85,
         "training_recency": 0.80
       }
+    },
+    {
+      "id": "emp-013",
+      "name": "Dana Okafor",
+      "role": "Account Operations Lead",
+      "department": "Customer Accounts",
+      "email": "dana.okafor@northwind-traders.example",
+      "exposure": ["manages_customer_accounts", "listed_on_public_contact_page", "handles_vendor_invoices"],
+      "voice": "conscientious but busy; usually double-checks, though will act on a plausible request when the pressure is on",
+      "traits": {
+        "authority_deference": 0.52,
+        "urgency_susceptibility": 0.55,
+        "curiosity": 0.48,
+        "helpfulness": 0.62,
+        "technical_literacy": 0.45,
+        "verification_habit": 0.50,
+        "training_recency": 0.45
+      }
     }
   ]
 }

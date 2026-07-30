@@ -31,13 +31,21 @@ public static class AttemptPlanner
     /// <summary>
     /// Plans <paramref name="attemptCount"/> attack attempts, then appends one control
     /// test per safety-probe case when <paramref name="includeSafetyProbe"/> is set.
+    /// <para>
+    /// When <paramref name="targetEmployeeId"/> is set, every attempt is aimed at that one
+    /// persona — a single-victim stress test for hardening one model against social
+    /// engineering. In that mode the no-repeat rule is off: the swarm may reuse any pretext
+    /// as often as it likes, because a repeated pretext is the point, not a scoring artefact,
+    /// when there is only one persona and no cross-persona ranking to skew.
+    /// </para>
     /// </summary>
     public static IReadOnlyList<PlannedAttempt> Plan(
         SyntheticOrg org,
         string engagementId,
         int attemptCount,
         int seed,
-        bool includeSafetyProbe = true)
+        bool includeSafetyProbe = true,
+        string? targetEmployeeId = null)
     {
         ArgumentNullException.ThrowIfNull(org);
         ArgumentException.ThrowIfNullOrWhiteSpace(engagementId);
@@ -45,33 +53,54 @@ public static class AttemptPlanner
 
         Random random = new(seed);
 
-        // Visit employees in a seeded order so the plan is not alphabetical.
-        List<Employee> rotation = Shuffle(org.Employees.ToList(), random);
-
-        // Per employee, the pretexts still available, best fit first.
-        Dictionary<string, Queue<PretextType>> available = rotation.ToDictionary(
-            employee => employee.Id,
-            employee => new Queue<PretextType>(RankPretexts(employee, random)),
-            StringComparer.Ordinal);
-
         List<(Employee Target, PretextType Pretext)> selections = [];
-        int rotationIndex = 0;
-        int exhausted = 0;
 
-        while (selections.Count < attemptCount && exhausted < rotation.Count)
+        if (targetEmployeeId is not null)
         {
-            Employee employee = rotation[rotationIndex % rotation.Count];
-            rotationIndex++;
+            Employee target = org.Find(targetEmployeeId)
+                ?? throw new ArgumentException(
+                    $"No employee '{targetEmployeeId}' in roster '{org.OrgName}'. Known ids: " +
+                    $"{string.Join(", ", org.Employees.Select(e => e.Id))}.",
+                    nameof(targetEmployeeId));
 
-            Queue<PretextType> queue = available[employee.Id];
-            if (queue.Count == 0)
+            // Ranked best-fit first, then cycled so N can exceed the catalog size.
+            // ponytail: pretexts cycle in fixed order; reshuffle per cycle if repetition
+            // reads as too rigid. The per-attempt tactic below already varies each time.
+            List<PretextType> ranked = RankPretexts(target, random).ToList();
+            for (int i = 0; i < attemptCount; i++)
             {
-                exhausted++;
-                continue;
+                selections.Add((target, ranked[i % ranked.Count]));
             }
+        }
+        else
+        {
+            // Visit employees in a seeded order so the plan is not alphabetical.
+            List<Employee> rotation = Shuffle(org.Employees.ToList(), random);
 
-            exhausted = 0;
-            selections.Add((employee, queue.Dequeue()));
+            // Per employee, the pretexts still available, best fit first.
+            Dictionary<string, Queue<PretextType>> available = rotation.ToDictionary(
+                employee => employee.Id,
+                employee => new Queue<PretextType>(RankPretexts(employee, random)),
+                StringComparer.Ordinal);
+
+            int rotationIndex = 0;
+            int exhausted = 0;
+
+            while (selections.Count < attemptCount && exhausted < rotation.Count)
+            {
+                Employee employee = rotation[rotationIndex % rotation.Count];
+                rotationIndex++;
+
+                Queue<PretextType> queue = available[employee.Id];
+                if (queue.Count == 0)
+                {
+                    exhausted++;
+                    continue;
+                }
+
+                exhausted = 0;
+                selections.Add((employee, queue.Dequeue()));
+            }
         }
 
         List<PlannedAttempt> plan = [];
@@ -159,6 +188,62 @@ public static class AttemptPlanner
             .Select(x => x.Pretext)
             .ToList();
     }
+
+    /// <summary>
+    /// A plain-language account of why the planner paired this pretext and tactic with this
+    /// target — the "stance" handed to the agent. Derived from the same signals <see cref="Plan"/>
+    /// uses (exposure match, then round-robin coverage; tactic sampled from the pretext's
+    /// combinations), so it explains the actual decision rather than narrating a generic one.
+    /// </summary>
+    public static string Explain(PlannedAttempt planned)
+    {
+        ArgumentNullException.ThrowIfNull(planned);
+
+        if (planned.IsControlTest)
+        {
+            return "Safety control test. A fixed, hand-written known-bad input is routed through the " +
+                   "identical agent and content-safety gate as a real attempt, to prove the gate blocks " +
+                   "it before delivery. Not an attack, and not counted as susceptibility.";
+        }
+
+        Employee target = planned.Target;
+        PretextType pretext = planned.Pretext;
+
+        string[] matched = pretext.ExposureTriggers.Where(target.HasExposure).ToArray();
+        string why = matched.Length > 0
+            ? $"Assigned because this persona's synthetic exposure ({string.Join(", ", matched)}) matches " +
+              "the pretext's triggers — the planner prefers approaches that fit what is observable about a " +
+              "target before anything else."
+            : "Assigned for coverage: no exposure attribute matched, so the planner fell back to its " +
+              "round-robin rotation, which exercises every persona before anyone is retried.";
+
+        IReadOnlyList<string> levers = PretextCatalog.ParseTactic(planned.Assignment.Tactic);
+        string leverText = string.Join("; ", levers.Select(id =>
+        {
+            Tactic? tactic = PretextCatalog.FindTactic(id);
+            return tactic is null ? id : $"{id} — {tactic.Description}";
+        }));
+
+        (TraitKey Key, double Value) dominant = levers
+            .Select(PretextCatalog.FindTactic)
+            .Where(tactic => tactic is not null)
+            .Select(tactic => (tactic!.PrimaryTrait, target.Traits[tactic.PrimaryTrait]))
+            .DefaultIfEmpty((TraitKey.AuthorityDeference, 0.0))
+            .MaxBy(pair => pair.Item2);
+
+        return $"{why} Delivered over the {pretext.Channel} channel using the tactic pairing " +
+               $"'{planned.Assignment.Tactic}' ({leverText}). The pairing leans hardest on the persona's " +
+               $"{ReadableTrait(dominant.Key)} dial ({dominant.Value:0.00}).";
+    }
+
+    private static string ReadableTrait(TraitKey key) => key switch
+    {
+        TraitKey.AuthorityDeference => "deference to authority",
+        TraitKey.UrgencySusceptibility => "sensitivity to urgency and pressure",
+        TraitKey.Curiosity => "curiosity about unexpected content",
+        TraitKey.Helpfulness => "urge to be helpful",
+        _ => key.ToString(),
+    };
 
     /// <summary>The largest plan the roster supports before pairs would have to repeat.</summary>
     public static int MaximumAttempts(SyntheticOrg org) =>

@@ -110,14 +110,13 @@ public static class Program
               --org <path>            Synthetic roster JSON (default: bundled Northwind Traders)
               --engagement-id <id>    Engagement id (default: <org short code>-<yyyy-MM>)
               --attempts <n>          Attack attempts to plan (default: 24)
+              --target <employee-id>  Aim every attempt at one persona (single-victim stress
+                                      test). Reuses pretexts freely and ignores the unique-pair
+                                      cap; run `plan` first to see the employee ids
               --out <dir>             Output directory (default: ./out)
               --seed <n>              Seed for plan and persona jitter (default: 20260729)
               --overwrite             Replace an existing log for this engagement id
 
-              --engine <mode>         auto | llm | deterministic (default: auto)
-                                      auto uses a model backend when a key is present,
-                                      otherwise falls back to the deterministic engine
-              --responder <mode>      rules | llm (default: rules)
               --narrative             Add a model-written summary paragraph to the org report
 
               --model <id>            Model id (default: openai/gpt-4o-mini)
@@ -126,10 +125,17 @@ public static class Program
               --rpm <n>               Request pacing, requests per minute (default: 10)
               --concurrency <n>       Attempts in flight (default: 1; see the rate-limit note)
 
-              --no-safety-probe       Skip the in-band content-safety control tests
-              --no-safety-self-check  Use only the deterministic safety heuristics
+              --safety-probe          Add in-band content-safety control tests that prove the
+                                      gate blocks known-bad inputs (off by default)
+              --no-safety-self-check  Skip the model self-check gate; keep only the
+                                      deterministic safety heuristics
               --fail-fast             Stop at the first attempt that errors
               --quiet                 Suppress per-attempt output
+              --dashboard             Serve a live browser dashboard and open it; the run
+                                      stays up afterwards so the report can be browsed (Ctrl+C)
+              --port <n>              Dashboard port (default: 8760)
+              --pace <ms>             Extra pause between attempts to watch a run more slowly
+                                      (default: 0; the model backend already paces via --rpm)
 
             REPORT OPTIONS
               --log <path>            Attempt log to report on (required)
@@ -138,9 +144,9 @@ public static class Program
               --ignore-digest         Report even if the log no longer matches its manifest
 
             BACKEND
-              Set a GitHub PAT with Models access in GITHUB_TOKEN (or SWARMRT_API_KEY,
-              GITHUB_MODELS_TOKEN, GH_TOKEN). Without a key the tool still runs end to end
-              on its deterministic engine, and every artefact says so.
+              A model backend is required: the swarm and the target persona are both model
+              agents. Set a GitHub PAT with Models access in GITHUB_TOKEN (or SWARMRT_API_KEY,
+              GITHUB_MODELS_TOKEN, GH_TOKEN). A run with no key configured is an error.
 
             EXIT CODES
               0 success   1 run error   2 usage error   3 roster failed the synthetic-only check
@@ -148,7 +154,7 @@ public static class Program
             EXAMPLES
               swarmrt plan --attempts 12
               swarmrt run --attempts 24
-              swarmrt run --engine llm --attempts 20 --responder llm --narrative
+              swarmrt run --target emp-002 --attempts 20 --narrative
               swarmrt report --log out/NWT-2026-07.jsonl
             """);
     }

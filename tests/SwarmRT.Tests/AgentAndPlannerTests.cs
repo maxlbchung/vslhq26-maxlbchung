@@ -249,6 +249,29 @@ public class AttemptPlannerTests
     }
 
     [Fact]
+    public void SingleTargetModeHitsOnlyThatPersonaAndReusesPretexts()
+    {
+        SyntheticOrg org = Roster();
+        int beyondCatalog = PretextCatalog.All.Count + 3;
+
+        IReadOnlyList<PlannedAttempt> plan = AttemptPlanner.Plan(
+            org, "TST", beyondCatalog, seed: 7, includeSafetyProbe: false, targetEmployeeId: "emp-002");
+
+        Assert.Equal(beyondCatalog, plan.Count);
+        Assert.All(plan, p => Assert.Equal("emp-002", p.Assignment.TargetEmployeeId));
+
+        // No-repeat rule is off here: exceeding the catalog forces a pretext to recur.
+        Assert.True(plan.Select(p => p.Assignment.PretextType).Distinct().Count() < plan.Count);
+    }
+
+    [Fact]
+    public void SingleTargetModeRejectsAnUnknownEmployee()
+    {
+        Assert.Throws<ArgumentException>(() => AttemptPlanner.Plan(
+            Roster(), "TST", 3, seed: 1, includeSafetyProbe: false, targetEmployeeId: "emp-999"));
+    }
+
+    [Fact]
     public void PrefersPretextsMatchingSyntheticExposure()
     {
         SyntheticOrg org = TestSupport.Org(

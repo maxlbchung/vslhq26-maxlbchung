@@ -156,6 +156,13 @@ public sealed record OrchestratorOptions
     /// <summary>Abort the run on the first attempt that fails outright.</summary>
     public bool FailFast { get; init; }
 
+    /// <summary>
+    /// Optional pause between sequential attempts. The model engine paces itself through the
+    /// throttle; this exists so the deterministic engine — which has nothing to wait on — can
+    /// still be watched attempt-by-attempt on the live dashboard. Ignored when concurrency > 1.
+    /// </summary>
+    public TimeSpan DelayBetweenAttempts { get; init; }
+
     public Action<PlannedAttempt, AttemptResult>? OnAttemptCompleted { get; init; }
 
     public Action<PlannedAttempt, Exception>? OnAttemptFailed { get; init; }
@@ -212,15 +219,20 @@ public sealed class Orchestrator(
 
         if (options.Concurrency <= 1)
         {
-            foreach (PlannedAttempt planned in plan)
+            for (int i = 0; i < plan.Count; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 bool ok = await ExecuteAndLogAsync(
-                    planned, logger, results, errors, options, cancellationToken).ConfigureAwait(false);
+                    plan[i], logger, results, errors, options, cancellationToken).ConfigureAwait(false);
 
                 if (!ok && options.FailFast)
                 {
                     break;
+                }
+
+                if (options.DelayBetweenAttempts > TimeSpan.Zero && i < plan.Count - 1)
+                {
+                    await Task.Delay(options.DelayBetweenAttempts, cancellationToken).ConfigureAwait(false);
                 }
             }
         }

@@ -15,8 +15,9 @@ public static class PlanCommand
         string orgPath = OrgLoader.ResolveDefaultPath(args.String("org"));
         int attempts = args.Int("attempts", 24, min: 1, max: 5000);
         int seed = args.Int("seed", 20260729);
-        bool includeProbe = args.Flag("safety-probe", defaultValue: true);
+        bool includeProbe = args.Flag("safety-probe", defaultValue: false);
         string? engagementIdOverride = args.String("engagement-id");
+        string? target = args.String("target");
         args.EnsureAllConsumed();
 
         SyntheticOrg org = OrgLoader.Load(orgPath);
@@ -24,7 +25,7 @@ public static class PlanCommand
                               ?? $"{org.ResolveShortCode()}-{DateTimeOffset.UtcNow:yyyy-MM}";
 
         int maxUseful = AttemptPlanner.MaximumAttempts(org);
-        if (attempts > maxUseful)
+        if (target is null && attempts > maxUseful)
         {
             Console.Error.WriteLine(
                 $"note: capping --attempts at {maxUseful} unique persona/pretext pairs.");
@@ -32,7 +33,7 @@ public static class PlanCommand
         }
 
         IReadOnlyList<PlannedAttempt> plan = AttemptPlanner.Plan(
-            org, engagementId, attempts, seed, includeProbe);
+            org, engagementId, attempts, seed, includeProbe, target);
 
         Console.WriteLine($"Roster '{org.OrgName}' passed the synthetic-only check ({org.Domain}).");
         Console.WriteLine($"Plan for engagement {engagementId}, seed {seed}:");

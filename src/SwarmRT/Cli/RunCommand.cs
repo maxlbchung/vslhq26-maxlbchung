@@ -1,3 +1,4 @@
+using System.Net;
 using SwarmRT.Agents;
 using SwarmRT.Contracts;
 using SwarmRT.Model;
@@ -27,20 +28,22 @@ public static class RunCommand
         string outputDirectory = Path.GetFullPath(args.String("out", "out")!);
         int seed = args.Int("seed", 20260729);
         int attempts = args.Int("attempts", 24, min: 1, max: 5000);
-        string engineChoice = args.Choice("engine", "auto", "auto", "llm", "deterministic");
-        string responderChoice = args.Choice("responder", "rules", "rules", "llm");
         int requestsPerMinute = args.Int("rpm", 10, min: 1, max: 600);
         int concurrency = args.Int("concurrency", 1, min: 1, max: 8);
-        bool includeProbe = args.Flag("safety-probe", defaultValue: true);
+        bool includeProbe = args.Flag("safety-probe", defaultValue: false);
         bool selfCheck = args.Flag("safety-self-check", defaultValue: true);
         bool narrative = args.Flag("narrative");
         bool failFast = args.Flag("fail-fast");
         bool overwrite = args.Flag("overwrite");
         bool quiet = args.Flag("quiet");
+        bool dashboard = args.Flag("dashboard");
+        int port = args.Int("port", 8760, min: 1, max: 65535);
+        int paceMs = args.Int("pace", 0, min: 0, max: 60000);
         string? endpoint = args.String("endpoint");
         string? modelId = args.String("model");
         string? keyVariable = args.String("key-env");
         string? engagementIdOverride = args.String("engagement-id");
+        string? target = args.String("target");
 
         args.EnsureAllConsumed();
 
@@ -51,8 +54,10 @@ public static class RunCommand
         string engagementId = engagementIdOverride
                               ?? $"{org.ResolveShortCode()}-{DateTimeOffset.UtcNow:yyyy-MM}";
 
+        // The unique-pair cap only applies to the round-robin plan; single-target mode
+        // deliberately reuses pretexts, so any attempt count is meaningful there.
         int maxUseful = AttemptPlanner.MaximumAttempts(org);
-        if (attempts > maxUseful)
+        if (target is null && attempts > maxUseful)
         {
             Console.Error.WriteLine(
                 $"note: --attempts {attempts} exceeds the {maxUseful} unique persona/pretext pairs " +
@@ -77,7 +82,10 @@ public static class RunCommand
             File.Delete(logPath);
         }
 
-        // ------------------------------------------------------------ engine selection
+        // ------------------------------------------------------------ model backend
+        // This tool exists to watch a swarm of model agents socially-engineer a model
+        // persona. There is no non-model path: composer, victim, and judge are all model
+        // calls, so a run without a backend is a configuration error, not a fallback.
 
         ModelBackendOptions backendOptions = new()
         {
@@ -90,60 +98,32 @@ public static class RunCommand
         };
 
         (string? apiKey, string variablesTried) = backendOptions.ResolveKey();
-
-        if (engineChoice == "deterministic")
+        if (apiKey is null)
         {
-            apiKey = null;
-        }
-        else if (apiKey is null)
-        {
-            if (engineChoice == "llm")
-            {
-                Console.Error.WriteLine(
-                    $"error: --engine llm needs an API key. Set one of: {variablesTried}.");
-                Console.Error.WriteLine(
-                    "       For GitHub Models, create a PAT with Models access and set GITHUB_TOKEN.");
-                return 2;
-            }
-
             Console.Error.WriteLine(
-                $"note: no API key found in {variablesTried}; falling back to the deterministic engine.");
+                $"error: no API key found in {variablesTried}. This tool runs the agents against a");
             Console.Error.WriteLine(
-                "      Output will be labelled as template-generated. Use --engine llm to require a backend.");
-        }
-
-        if (responderChoice == "llm" && apiKey is null)
-        {
-            Console.Error.WriteLine("error: --responder llm needs a model backend, but none is configured.");
+                "       model, so a backend is required. For GitHub Models, create a PAT with Models");
+            Console.Error.WriteLine(
+                "       access and set GITHUB_TOKEN.");
             return 2;
         }
 
-        using ModelThrottle? throttle = apiKey is null
-            ? null
-            : new ModelThrottle(requestsPerMinute, concurrency);
+        using ModelThrottle throttle = new(requestsPerMinute, concurrency);
+        using OpenAiCompatibleModelClient model = new(backendOptions, apiKey, throttle);
 
-        using OpenAiCompatibleModelClient? model = apiKey is null || throttle is null
-            ? null
-            : new OpenAiCompatibleModelClient(backendOptions, apiKey, throttle);
-
+        // The safety gate, sanitizer, and synthetic-org guard are deterministic on purpose:
+        // they are guardrails, not the experiment. They stay regardless of the backend.
         HeuristicSafetyScreen heuristics = new();
         LogTextSanitizer sanitizer = new(heuristics);
 
-        ILureComposer composer = model is null
-            ? new TemplateLureComposer()
-            : new ModelLureComposer(model);
-
-        IReplyJudge judge = model is null
-            ? new HeuristicReplyJudge()
-            : new ModelReplyJudge(model);
-
-        IEmployeeResponder responder = responderChoice == "llm" && model is not null
-            ? new ModelPersonaResponder(model)
-            : new RuleWeightedResponder();
+        ILureComposer composer = new ModelLureComposer(model);
+        IReplyJudge judge = new ModelReplyJudge(model);
+        IEmployeeResponder responder = new ModelPersonaResponder(model);
 
         LayeredContentSafetyGate gate = new(
             heuristics,
-            model is not null && selfCheck ? new ModelSelfCheckGate(model) : null);
+            selfCheck ? new ModelSelfCheckGate(model) : null);
 
         AgentDefinition definition = new()
         {
@@ -156,7 +136,7 @@ public static class RunCommand
         };
 
         IReadOnlyList<PlannedAttempt> plan = AttemptPlanner.Plan(
-            org, engagementId, attempts, seed, includeProbe);
+            org, engagementId, attempts, seed, includeProbe, target);
 
         if (!quiet)
         {
@@ -165,8 +145,29 @@ public static class RunCommand
 
         // ------------------------------------------------------------------- the run
 
+        LiveDashboard? dash = null;
+        if (dashboard)
+        {
+            try
+            {
+                dash = new LiveDashboard(port);
+                dash.Start();
+            }
+            catch (HttpListenerException ex)
+            {
+                Console.Error.WriteLine(
+                    $"note: could not start the dashboard on port {port} ({ex.Message}); " +
+                    "continuing without it. Try --port with a free port.");
+                dash = null;
+            }
+        }
+
         Orchestrator orchestrator = new(
             definition, new ControlTestLureComposer(), sanitizer, TimeProvider.System);
+
+        // The model backend already paces itself through the throttle; --pace only exists to
+        // slow a run down further if you want to watch it attempt-by-attempt.
+        TimeSpan pace = paceMs > 0 ? TimeSpan.FromMilliseconds(paceMs) : TimeSpan.Zero;
 
         int completed = 0;
         OrchestratorOptions options = new()
@@ -175,9 +176,11 @@ public static class RunCommand
             EngagementSeed = seed,
             Concurrency = concurrency,
             FailFast = failFast,
+            DelayBetweenAttempts = pace,
             OnAttemptCompleted = (planned, result) =>
             {
                 completed++;
+                dash?.PublishAttempt(completed, plan.Count, planned, result);
                 if (!quiet)
                 {
                     PrintAttempt(completed, plan.Count, planned, result);
@@ -186,6 +189,7 @@ public static class RunCommand
             OnAttemptFailed = (planned, error) =>
             {
                 completed++;
+                dash?.PublishError(completed, plan.Count, planned, error);
                 Console.Error.WriteLine(
                     $"[{completed}/{plan.Count}] {planned.Assignment.AttemptId} " +
                     $"{planned.Assignment.PretextType} -> ERROR {error.Message}");
@@ -200,15 +204,7 @@ public static class RunCommand
 
         EngagementStatistics stats = EngagementStatistics.From(engagement.Results, org);
 
-        NarrativeWriter? narrativeWriter = narrative && model is not null
-            ? new NarrativeWriter(model, sanitizer)
-            : null;
-
-        if (narrative && model is null)
-        {
-            Console.Error.WriteLine(
-                "note: --narrative needs a model backend; generating the report without a narrative paragraph.");
-        }
+        NarrativeWriter? narrativeWriter = narrative ? new NarrativeWriter(model, sanitizer) : null;
 
         string reportDirectory = Path.Combine(outputDirectory, "reports");
         ReportOutputs reports = await new ReportGenerator()
@@ -216,18 +212,42 @@ public static class RunCommand
             .ConfigureAwait(false);
 
         PrintSummary(engagement, stats, reports, gate);
+        dash?.Complete(reports.OrgSummaryPath, ReportSummary.From(stats, engagement.Manifest));
 
         // A control test that failed to block means the safety claim is unproven.
+        int exitCode = 0;
         if (engagement.Manifest.ControlTestsRun > 0 &&
             engagement.Manifest.ControlTestsBlocked != engagement.Manifest.ControlTestsRun)
         {
             Console.Error.WriteLine(
                 "error: one or more content-safety control tests were not blocked. " +
                 "Treat the gate as unverified.");
-            return 1;
+            exitCode = 1;
+        }
+        else if (engagement.Manifest.Errors.Count > 0 && failFast)
+        {
+            exitCode = 1;
         }
 
-        return engagement.Manifest.Errors.Count > 0 && failFast ? 1 : 0;
+        if (dash is not null)
+        {
+            Console.WriteLine();
+            Console.WriteLine($"  dashboard  {dash.Url}  (Ctrl+C to stop)");
+            dash.OpenBrowser();
+
+            // Keep serving so the run can be browsed after it finishes; Ctrl+C ends it.
+            try
+            {
+                await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+
+            dash.Dispose();
+        }
+
+        return exitCode;
     }
 
     private static void PrintHeader(
