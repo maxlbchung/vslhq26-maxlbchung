@@ -13,10 +13,13 @@ An AI agent workflow that safely simulates phishing-style social-engineering att
 
 ## What it does
 
-SERT is a defensive security-awareness tool. A coordinator (the "orchestrator") sends out many one-shot AI agents.
-Each agent runs a single simulated social-engineering attempt — a phishing-style message — against a fake employee, then reports whether it worked.
-The orchestrator keeps trying new agents with different tactics to uncover more weaknesses.
-Everything runs against a **made-up** company with **fabricated** employees; nothing is ever sent to a real person, mailbox, or system.
+SERT is a defensive security-awareness tool. A central orchestrator dispatches a swarm of agents. Each one makes a **single** simulated social-engineering attempt and reports back if they succeeded or failed.
+
+Every attempt is logged, and the log becomes a training deliverable: which methods worked, against whom, and why. This can help companies better train their employees, and in the recent meta agent fiasco, better guardrail their models too.
+
+[www.404media.co/hackers-simply-asked-meta-ai-to-give-them-access-to-high-profile-instagram-accounts-it-worked](https://www.404media.co/hackers-simply-asked-meta-ai-to-give-them-access-to-high-profile-instagram-accounts-it-worked/)
+
+This project simulates **fabricated** employees at a **made up** company.
 
 ## Architecture
 
@@ -40,7 +43,7 @@ its own result.
 
 - Languages: C#
 - Frameworks/libraries: .NET 9 (no third-party dependencies)
-- AI models/services: Azure OpenAI or any OpenAI-compatible chat endpoint (GitHub Models used by default); a built-in offline engine runs when no key is set
+- AI models/services: Azure OpenAI or any OpenAI-compatible chat endpoint (GitHub Models used by default). A model backend is required — the swarm and the target persona are both model agents
 - Hosting: Runs locally
 
 ## Getting started
@@ -48,14 +51,14 @@ its own result.
 ### Prerequisites
 
 - .NET 9 SDK
-- Optional, only for real AI calls: an API key for Azure OpenAI or GitHub Models, set in the `SWARMRT_API_KEY` environment variable
+- Required: an API key for Azure OpenAI or GitHub Models, set in the `SWARMRT_API_KEY` environment variable (a GitHub PAT with Models access works)
 
 ### Setup
 
 ```bash
 # Clone the repo
-git clone https://github.com/<owner>/<repo>.git
-cd <repo>
+git clone https://github.com/maxlbchung/vslhq26-maxlbchung.git
+cd vslhq26-maxlbchung
 
 dotnet build
 
@@ -85,13 +88,11 @@ export SWARMRT_API_KEY=<token>
 
 Keys are read from `SWARMRT_API_KEY`, then `GITHUB_MODELS_TOKEN`, `GITHUB_TOKEN`, `GH_TOKEN`.
 Azure OpenAI or any other OpenAI-compatible endpoint works via `--endpoint`, `--model`, and `--key-env`.
-**Without a key the tool still runs end to end** using the built-in offline engine.
+**A model backend is required; a run with no key configured is an error.**
 
 ## Demo (required)
 
-- Video file in this repo (preferred): `./demo/demo.mp4` (or similar path)
-- Video link (YouTube, Loom, etc.) if not committed to repo:
-- Deployed URL (if any):
+- Video file in this repo: [`./demo/demo.mp4`](./demo/demo.mp4)
 
 ## Known limitations
 
@@ -105,4 +106,21 @@ By design, SERT does not:
 
 ## License
 
-MIT (or your choice)
+This project: MIT.
+
+### Third-party licenses & attributions
+
+**Runtime dependencies:** none beyond the .NET 9 base class library (MIT).
+
+**Test-only dependencies** (not shipped with the tool):
+
+| Package | Version | License |
+| --- | --- | --- |
+| xunit | 2.9.2 | Apache-2.0 |
+| xunit.runner.visualstudio | 2.8.2 | Apache-2.0 |
+| Microsoft.NET.Test.Sdk | 17.12.0 | MIT |
+| coverlet.collector | 6.0.2 | MIT |
+
+**AI models/services:** used via API, not redistributed — Azure OpenAI and GitHub Models are subject to their respective provider terms. No model weights are bundled.
+
+**Assets:** the only data asset, `src/SwarmRT/data/synthetic-org.json`, is fully fabricated original content (made-up company and employees) authored for this project. No third-party datasets, images, fonts, or audio are used.

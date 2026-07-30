@@ -39,6 +39,10 @@ public static class Program
                     return await ReportCommand.ExecuteAsync(new Arguments(rest), cancellation.Token)
                         .ConfigureAwait(false);
 
+                case "view":
+                    return await ViewCommand.ExecuteAsync(new Arguments(rest), cancellation.Token)
+                        .ConfigureAwait(false);
+
                 case "plan":
                     return await PlanCommand.ExecuteAsync(new Arguments(rest), cancellation.Token)
                         .ConfigureAwait(false);
@@ -94,6 +98,7 @@ public static class Program
                                              inbox out of one code? Logs and reports the result
               swarmrt run     [options]      Run a full multi-pretext engagement
               swarmrt report  --log <path>   Rebuild reports from an existing log
+              swarmrt view    --log <path>   Replay a recorded run in the browser dashboard
               swarmrt plan    [options]      Print the attempt plan without executing it
               swarmrt help                   Show this message
 
@@ -143,6 +148,12 @@ public static class Program
               --out <dir>             Report directory (default: <log dir>/reports)
               --ignore-digest         Report even if the log no longer matches its manifest
 
+            VIEW OPTIONS
+              --log <path>            Recorded attempt log to replay (required; its
+                                      <id>.run.json manifest must sit beside it)
+              --org <path>            Roster the engagement ran against
+              --port <n>              Dashboard port (default: 8760)
+
             BACKEND
               A model backend is required: the swarm and the target persona are both model
               agents. Set a GitHub PAT with Models access in GITHUB_TOKEN (or SWARMRT_API_KEY,
@@ -156,6 +167,7 @@ public static class Program
               swarmrt run --attempts 24
               swarmrt run --target emp-002 --attempts 20 --narrative
               swarmrt report --log out/NWT-2026-07.jsonl
+              swarmrt view --log out/emp-013-split.jsonl
             """);
     }
 }

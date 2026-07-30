@@ -400,7 +400,7 @@ public sealed class LiveDashboard : IDisposable
         </head>
         <body>
           <div class="bar">
-            <span class="title">SWARMRT // LIVE</span>
+            <span class="title">SERT // LIVE</span>
             <span class="status" id="status">connecting...</span>
             <button class="btn" id="toReport" hidden>VIEW REPORT &#9654;</button>
             <button class="btn" id="toFeed" hidden>&#9664; BACK TO ATTEMPTS</button>
