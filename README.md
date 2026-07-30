@@ -1,12 +1,17 @@
-# SwarmRT
+# SERT - Social Engineering Red Teaming
 
 **A stateless agent-swarm social-engineering simulator with orchestrator logging and report generation.**
 
-SwarmRT is a defensive security-awareness tool. A central orchestrator dispatches a swarm of
-stateless agents; each one makes a **single** simulated social-engineering attempt against a
-**fabricated** employee at a **synthetic** company, returns one result object, and is discarded.
+SERT is a defensive security-awareness tool. A central orchestrator dispatches a swarm of agents.
+Each one makes a **single** simulated social-engineering attempt and reports back if they succeeded or failed.
+Orchestrator then dispatches new agents with different approaches to better find vulnerabilities.
+
 Every attempt is logged, and the log becomes a training deliverable: which pretexts worked,
-against whom, and why.
+against whom, and why. This can help companies better train their employees, and in the recent meta agent fiasco, better guardrail their models.
+https://www.404media.co/hackers-simply-asked-meta-ai-to-give-them-access-to-high-profile-instagram-accounts-it-worked/
+ 
+This project is a simulation with a **fabricated** employee at a **made up** company.
+
 
 Nothing is ever delivered to a real person, mailbox, or system.
 
